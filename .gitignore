@@ -35,3 +35,5 @@
 
 output/
 !output/.keep
+
+cmake-build-debug/
