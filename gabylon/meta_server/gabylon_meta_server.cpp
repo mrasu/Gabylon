@@ -94,7 +94,7 @@ int GabylonMetaServer::handleSocketData(int socket) {
     if (message->method == MetaMessageMethod::CREATE) {
         auto meta = FileMeta::dumpMessage(message->body);
         auto uuid = boost::uuids::random_generator()();
-        // auto uuidString = boost::lexical_cast<std::string>(uuid);
+        // auto uuidString = boost::lexical_cast<std::string>(fileId);
         std::string uuidString;
         std::stringstream ss;
         ss << uuid;
@@ -104,7 +104,7 @@ int GabylonMetaServer::handleSocketData(int socket) {
         auto ret = send(socket, uuidString.c_str(), uuidString.length(), 0);
 
         if (ret > 0) {
-            printf("uuid sent: %s(%zd)\n", uuidString.c_str(), ret);
+            printf("fileId sent: %s(%zd)\n", uuidString.c_str(), ret);
             return 0;
         } else {
             printf("*******");

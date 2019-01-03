@@ -5,7 +5,8 @@
 #include <zconf.h>
 #include <arpa/inet.h>
 
-int send_meta();
+int sendMeta();
+int sendData(const std::string&);
 
 int main() {
     std::cout << "client!" << std::endl;
@@ -58,12 +59,13 @@ int main() {
 
     close(sock);
      */
-    return send_meta();
+    // return sendMeta();
+    return sendData("111");
 
     return 0;
 }
 
-int send_meta() {
+int sendMeta() {
     printf("sending meta...\n");
     int sock;
 
@@ -117,4 +119,79 @@ int send_meta() {
     close(sock);
 
     return 0;
+}
+
+int sendData(const std::string &fileId) {
+    printf("sending data...\n");
+    int sock;
+
+    sock = socket(AF_INET, SOCK_STREAM, 0);
+
+    struct sockaddr_in server = {};
+    server.sin_family = AF_INET;
+    server.sin_port = htons(12346);
+    server.sin_addr.s_addr = inet_addr("127.0.0.1");
+
+    connect(sock, (struct sockaddr *)&server, sizeof(server));
+
+    // std::string in_file_path = "test_short.txt";
+    // std::string in_file_path = "test_long.txt";
+    std::string in_file_path = "Crown.png";
+    std::ifstream is("./input/" + in_file_path, std::ifstream::binary);
+    if (!is) {
+        printf("Failed to dumpMessage stream");
+        return 1;
+    }
+
+    is.seekg(0, std::fstream::end);
+    const auto end = is.tellg();
+    is.clear();
+    is.seekg(0, std::fstream::beg);
+    const auto start = is.tellg();
+    const auto size = end - start;
+
+    ssize_t ret;
+    std::string message = "WRITE\nFileId:" + fileId + "\nSize:" + std::to_string(size) + "\nPath:"+in_file_path+"\n\n";
+    ret = send(sock, message.c_str(), message.length(), 0);
+    if (ret < 0) {
+        printf("Failed to send file path!: %zd", ret);
+        return 1;
+    }
+
+    char buffer[1000];
+    ret = read(sock, buffer, sizeof(buffer));
+    if (ret < 0) {
+        printf("Failed to read: %zd", ret);
+        return 1;
+    }
+    printf("%s\n", buffer);
+
+    char fileBuffer[1000];
+    memset(fileBuffer, 0, sizeof(fileBuffer));
+    std::string text;
+    while(!is.eof()) {
+        is.read(fileBuffer, sizeof(fileBuffer));
+        ret = send(sock, fileBuffer, (size_t)is.gcount(), 0);
+        if (ret < 0) {
+            printf("Failed to send!: %zd", ret);
+            is.close();
+            return -1;
+        }
+
+        printf("sending...\n");
+    }
+
+    memset(buffer, 0, sizeof(buffer));
+    ret = read(sock, buffer, sizeof(buffer));
+    if (ret < 0) {
+        printf("Failed to read: %zd", ret);
+        return 1;
+    }
+    printf("%s\n", buffer);
+
+    is.close();
+
+    printf("FIN!\n");
+
+    close(sock);
 }

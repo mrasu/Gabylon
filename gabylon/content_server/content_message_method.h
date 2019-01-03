@@ -1,0 +1,10 @@
+#ifndef CLIENT_CONTENT_MESSAGE_METHOD_H
+#define CLIENT_CONTENT_MESSAGE_METHOD_H
+
+
+enum ContentMessageMethod {
+    WRITE = 0
+};
+
+
+#endif //CLIENT_CONTENT_MESSAGE_METHOD_H
