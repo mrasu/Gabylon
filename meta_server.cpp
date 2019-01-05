@@ -8,10 +8,11 @@
 #include <array>
 #include <vector>
 #include "gabylon/server/gabylon_server.h"
+#include "gabylon/meta_server/gabylon_meta_server.h"
+#include "gabylon/content_server/gabylon_content_server.h"
 
 int main() {
-    std::cout << "main" << std::endl;
-    auto *server = new GabylonServer("./output/");
-    server->start();
-    return 0;
+    std::cout << "Start MetaServer..." << std::endl;
+    auto *server = new GabylonMetaServer();
+    return server->start(12345);
 }

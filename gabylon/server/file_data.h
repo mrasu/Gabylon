@@ -3,7 +3,7 @@
 
 
 #include "file_content.h"
-#include "file_meta.h"
+#include "../meta_server/file_meta.h"
 
 class FileData {
 public:
