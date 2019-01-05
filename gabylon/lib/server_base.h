@@ -8,12 +8,12 @@ class ServerBase {
 private:
     ssize_t reply(int socket, const std::string &message);
 protected:
-    std::string readSentData(int socket);
     ssize_t error(int socket, const std::string &humanErrorMessage);
     ssize_t ok(int socket);
     ssize_t ng(int socket);
+    virtual void acceptRequest(int listeningSocket) = 0;
 public:
-    virtual int start() = 0;
+    int start(uint16_t port);
 };
 
 

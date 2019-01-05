@@ -6,6 +6,7 @@
 #include <vector>
 #include "gabylon_meta_server_client.h"
 #include "client_exception.h"
+#include "../lib/socket_read_writer.h"
 
 GabylonMetaServerClient::GabylonMetaServerClient(sockaddr_in metaServerAddr) {
     auto creatingSocket = socket(AF_INET, SOCK_STREAM, 0);
@@ -32,7 +33,8 @@ bool GabylonMetaServerClient::isFileCreating(std::string fileId) {
         throw ClientException(("CHECK_CREATING failed to send server: " + std::to_string(ret)).c_str());
     }
 
-    auto response = readResponse();
+    auto reader = SocketReadWriter(clientSocket);
+    auto response = reader.readReceivedText();
     if (response == "OK") {
         return true;
     } else if (response == "NG") {
@@ -40,44 +42,5 @@ bool GabylonMetaServerClient::isFileCreating(std::string fileId) {
     } else {
         printf("isFileCreating failed!: %s\n", response.c_str());
         return false;
-    }
-}
-
-std::string GabylonMetaServerClient::readResponse() {
-    char buffer[50];
-    memset(buffer, 0, sizeof(buffer));
-
-    std::vector<char> response;
-    auto is_previous_new_line = false;
-    while(true) {
-        auto ret = read(clientSocket, buffer, sizeof(buffer));
-        if (ret < 0) {
-            throw ClientException(("Failed to read response: " + std::to_string(ret)).c_str());
-        } else if (ret == 0) {
-            break;
-        }
-
-        for (int i = 0; i < ret; i++) {
-            response.push_back(buffer[i]);
-            if (buffer[i] == '\n') {
-                if (is_previous_new_line) {
-                    break;
-                } else {
-                    is_previous_new_line = true;
-                }
-            } else if (is_previous_new_line) {
-                is_previous_new_line = false;
-            }
-        }
-    }
-
-    while(!response.empty() && response.back() == '\n') {
-        response.pop_back();
-    }
-
-    if (response.empty()) {
-        return "";
-    } else {
-        return std::string(response.begin(), response.end());
     }
 }

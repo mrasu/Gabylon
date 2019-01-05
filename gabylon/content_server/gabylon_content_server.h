@@ -8,7 +8,7 @@
 #include "write_info.h"
 #include "../lib/server_base.h"
 
-class GabylonContentServer: protected ServerBase {
+class GabylonContentServer: public ServerBase {
 private:
     std::string basePath;
     sockaddr_in metaServerAddr;
@@ -16,9 +16,10 @@ private:
     ContentMessage* readSocketContentMessage(int);
     bool validateFileidForWriting(WriteInfo*);
     int saveStream(int, WriteInfo*);
+protected:
+    void acceptRequest(int listeningSocket) override;
 public:
     explicit GabylonContentServer(std::string, sockaddr_in);
-    int start() override;
 };
 
 

@@ -13,6 +13,7 @@
 #include "../server_exceptions/invalid_method_exception.h"
 #include "../server_exceptions/invalid_body_exception.h"
 #include "check_creating_message.h"
+#include "../lib/socket_read_writer.h"
 
 #include <boost/lexical_cast.hpp>
 #include <boost/uuid/uuid_io.hpp>
@@ -23,75 +24,30 @@ GabylonMetaServer::GabylonMetaServer():
     metaMap(std::unordered_map<std::string, FileMeta*>()),
     writingMetas(std::unordered_map<std::string, FileMeta*>()) {}
 
-int GabylonMetaServer::start() {
-    struct sockaddr_in addr = {0};
+void GabylonMetaServer::acceptRequest(int listeningSocket) {
+    sockaddr_in client = {0};
+    socklen_t len = sizeof(client);
 
-    int listeningSocket;
-    listeningSocket = socket(AF_INET, SOCK_STREAM, 0);
+    auto acceptedSocket = accept(listeningSocket, (struct sockaddr *) &client, &len);
 
-    int ret;
-    int on = 1;
-    ret = setsockopt(listeningSocket, SOL_SOCKET, SO_REUSEADDR, &on, sizeof(on));
-    if (ret < 0) {
-        printf("SO_REUSEADDR error! %d\n", ret);
-        return 1;
-    }
+    printf("connection accepted\n");
 
-    addr.sin_family = AF_INET;
-    addr.sin_port = htons(12345);
-    // addr.sin_addr.s_addr = INADDR_ANY;
-    inet_pton(AF_INET, "127.0.0.1", &(addr.sin_addr.s_addr));
-    printf("allow: %s\n", inet_ntoa(addr.sin_addr));
-    ret = bind(listeningSocket, (struct sockaddr *)&addr, sizeof(addr));
-
-    if (ret < 0) {
-        printf("Bind error!: %d\n", ret);
-        return 1;
-    }
-
-    ret = listen(listeningSocket, 5);
-
-    if (ret < 0) {
-        printf("Listen error!: %d\n", ret);
-        return 1;
-    }
-
-    auto count = 0;
-
-    while(true) {
-        struct sockaddr_in client = {0};
-        socklen_t len = sizeof(client);
-
-        int socket;
-        socket = accept(listeningSocket, (struct sockaddr *) &client, &len);
-
-        printf("connection accepted\n");
-
-        try {
-            ret = handleSocketData(socket);
-            if (ret != 0) {
-                printf("error happen: %d\n", ret);
-            }
-        } catch (InvalidMethodException& e) {
-            error(socket, e.what());
-            printf("Error: %s\n", e.what());
-        } catch (InvalidBodyException& e) {
-            error(socket, e.what());
-            printf("Error: %s\n", e.what());
-        } catch (std::exception& e) {
-            printf("Error: %s\n", e.what());
+    try {
+        auto ret = handleSocketData(acceptedSocket);
+        if (ret != 0) {
+            printf("error happen: %d\n", ret);
         }
-
-        close(socket);
-        printf("connection closed\n");
-
-        count++;
-
-        if (count >= 10) break;
+    } catch (InvalidMethodException& e) {
+        error(acceptedSocket, e.what());
+        printf("Error: %s\n", e.what());
+    } catch (InvalidBodyException& e) {
+        error(acceptedSocket, e.what());
+        printf("Error: %s\n", e.what());
+    } catch (std::exception& e) {
+        printf("Error: %s\n", e.what());
     }
-    close(listeningSocket);
 
-    return 0;
+    close(acceptedSocket);
 }
 
 int GabylonMetaServer::handleSocketData(int socket) {
@@ -151,6 +107,7 @@ int GabylonMetaServer::handleSocketData(int socket) {
 }
 
 MetaMessage* GabylonMetaServer::readSocketData(int socket) {
-    auto message = readSentData(socket);
+    auto reader = SocketReadWriter(socket);
+    auto message = reader.readReceivedText();
     return MetaMessage::dumpText(message);
 }

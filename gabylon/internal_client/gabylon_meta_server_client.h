@@ -7,9 +7,8 @@
 class GabylonMetaServerClient {
 private:
     int clientSocket;
-    std::string readResponse();
 public:
-    GabylonMetaServerClient(sockaddr_in metaServerAddr);
+    explicit GabylonMetaServerClient(sockaddr_in metaServerAddr);
     ~GabylonMetaServerClient();
     bool isFileCreating(std::string fileId);
 };

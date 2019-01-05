@@ -2,51 +2,57 @@
 #include <cstring>
 #include <vector>
 #include <zconf.h>
+#include <netinet/in.h>
+#include <arpa/inet.h>
 #include "server_base.h"
 
-std::string ServerBase::readSentData(int socket) {
-    char buffer[50];
-    memset(buffer, 0, sizeof(buffer));
+int ServerBase::start(uint16_t port) {
+    struct sockaddr_in addr = {0};
 
-    std::vector<char> messages;
-    bool is_previous_new_line = false;
-    bool reaches_end = false;
+    int listeningSocket;
+    listeningSocket = socket(AF_INET, SOCK_STREAM, 0);
+
+    int ret;
+    int on = 1;
+    ret = setsockopt(listeningSocket, SOL_SOCKET, SO_REUSEADDR, &on, sizeof(on));
+    if (ret < 0) {
+        printf("SO_REUSEADDR error! %d\n", ret);
+        return 1;
+    }
+
+    addr.sin_family = AF_INET;
+    addr.sin_port = htons(port);
+    // addr.sin_addr.s_addr = INADDR_ANY;
+    inet_pton(AF_INET, "127.0.0.1", &(addr.sin_addr.s_addr));
+    printf("allow: %s\n", inet_ntoa(addr.sin_addr));
+    ret = bind(listeningSocket, (struct sockaddr *)&addr, sizeof(addr));
+
+    if (ret < 0) {
+        printf("Bind error!: %d\n", ret);
+        return 1;
+    }
+
+    ret = listen(listeningSocket, 5);
+
+    if (ret < 0) {
+        printf("Listen error!: %d\n", ret);
+        return 1;
+    }
+
+    auto count = 0;
+
     while(true) {
-        auto ret = read(socket, buffer, sizeof(buffer));
+        printf("connection accepted\n");
+        acceptRequest(listeningSocket);
+        printf("connection closed\n");
 
-        if (ret < 0) {
-            printf("read error!: %zd", ret);
-            return nullptr;
-        } else if (ret == 0) {
-            break;
-        }
+        count++;
 
-        for (int i = 0; i < ret; i++) {
-            if (buffer[i] == '\n') {
-                if (is_previous_new_line) {
-                    reaches_end = true;
-                    break;
-                }
-                is_previous_new_line = true;
-            } else if (is_previous_new_line){
-                is_previous_new_line = false;
-            }
-            messages.push_back(buffer[i]);
-        }
-        if (reaches_end) {
-            break;
-        }
+        if (count >= 10) break;
     }
+    close(listeningSocket);
 
-    while(!messages.empty() && messages.back() == '\n') {
-        messages.pop_back();
-    }
-
-    if (messages.empty()) {
-        return "";
-    } else {
-        return std::string(messages.begin(), messages.end());
-    }
+    return 0;
 }
 
 ssize_t ServerBase::error(int socket, const std::string &humanErrorMessage) {

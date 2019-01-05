@@ -19,5 +19,5 @@ int main() {
     metaServerAddr.sin_port = htons(12345);
     metaServerAddr.sin_addr.s_addr = inet_addr("127.0.0.1");
     auto *server =  new GabylonContentServer("./output/", metaServerAddr);
-    return server->start();
+    return server->start(12346);
 }

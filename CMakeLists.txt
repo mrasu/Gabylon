@@ -29,7 +29,9 @@ add_executable(meta_server
         gabylon/meta_server/check_creating_message.cpp
         gabylon/meta_server/check_creating_message.h
         gabylon/lib/message_body.cpp
-        gabylon/lib/message_body.h)
+        gabylon/lib/message_body.h
+        gabylon/lib/socket_read_writer.cpp
+        gabylon/lib/socket_read_writer.h)
 
 add_executable(content_server
         content_server.cpp
@@ -53,7 +55,9 @@ add_executable(content_server
         gabylon/lib/server_base.cpp
         gabylon/lib/server_base.h
         gabylon/lib/message_body.cpp
-        gabylon/lib/message_body.h)
+        gabylon/lib/message_body.h
+        gabylon/lib/socket_read_writer.cpp
+        gabylon/lib/socket_read_writer.h)
 
 add_executable(client client.cpp)
 

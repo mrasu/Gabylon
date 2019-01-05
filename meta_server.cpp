@@ -14,5 +14,5 @@
 int main() {
     std::cout << "Start MetaServer..." << std::endl;
     auto *server = new GabylonMetaServer();
-    return server->start();
+    return server->start(12345);
 }

@@ -13,62 +13,23 @@
 GabylonContentServer::GabylonContentServer(const std::string path, sockaddr_in metaServerAddr): basePath(path), metaServerAddr(metaServerAddr) {
 }
 
-int GabylonContentServer::start() {
-    struct sockaddr_in addr = {0};
+void GabylonContentServer::acceptRequest(int listeningSocket) {
+    struct sockaddr_in client = {0};
+    socklen_t len = sizeof(client);
 
-    int listeningSocket;
-    listeningSocket = socket(AF_INET, SOCK_STREAM, 0);
+    int acceptedSocket = accept(listeningSocket, (sockaddr*)&client, &len);
 
-    int ret;
-    int on = 1;
-    ret = setsockopt(listeningSocket, SOL_SOCKET, SO_REUSEADDR, &on, sizeof(on));
-    if (ret < 0) {
-        printf("SO_REUSEADDR error! %d\n", ret);
-        return 1;
-    }
-
-    addr.sin_family = AF_INET;
-    addr.sin_port = htons(12346);
-    inet_pton(AF_INET, "127.0.0.1", &(addr.sin_addr.s_addr));
-    ret = bind(listeningSocket, (struct sockaddr *)&addr, sizeof(addr));
-    if (ret < 0) {
-        printf("Bind error! %d\n", ret);
-        return 1;
-    }
-
-    ret = listen(listeningSocket, 5);
-    if (ret < 0) {
-        printf("Listen ereor! %d\n", ret);
-        return 1;
-    }
-
-    int count = 0;
-    while(true) {
-        struct sockaddr_in client = {0};
-        socklen_t len = sizeof(client);
-
-        int socket = accept(listeningSocket, (sockaddr*)&client, &len);
-
-        printf("accept connection!\n");
-
-        try {
-            ret = handleSocketData(socket);
-            if (ret != 0) {
-                printf("error happen: %d\n", ret);
-            }
-            printf("finish: handleSocketData\n");
-        } catch (std::exception& e) {
-            printf("Error: %s\n", e.what());
+    try {
+        auto ret = handleSocketData(acceptedSocket);
+        if (ret != 0) {
+            printf("error happen: %d\n", ret);
         }
-
-        close(socket);
-
-        count++;
-        if (count >= 10) break;
+        printf("finish: handleSocketData\n");
+    } catch (std::exception& e) {
+        printf("Error: %s\n", e.what());
     }
 
-    close(listeningSocket);
-    return 0;
+    close(acceptedSocket);
 }
 
 int GabylonContentServer::handleSocketData(int socket) {
