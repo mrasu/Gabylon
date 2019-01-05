@@ -1,7 +1,7 @@
 #include <utility>
 
 #include "file_meta.h"
-#include "../exceptions/invalid_body_exception.h"
+#include "../server_exceptions/invalid_body_exception.h"
 
 FileMeta::FileMeta(std::string path): path(std::move(path)) {}
 

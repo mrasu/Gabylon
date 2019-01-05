@@ -5,7 +5,7 @@
 #include <zconf.h>
 #include <arpa/inet.h>
 
-int sendMeta();
+std::string sendMeta();
 int sendData(const std::string&);
 
 int main() {
@@ -59,13 +59,17 @@ int main() {
 
     close(sock);
      */
-    // return sendMeta();
-    return sendData("111");
+
+    auto fileId = sendMeta();
+    if (fileId.empty()) {
+        return 1;
+    }
+    return sendData(fileId);
 
     return 0;
 }
 
-int sendMeta() {
+std::string sendMeta() {
     printf("sending meta...\n");
     int sock;
 
@@ -92,7 +96,7 @@ int sendMeta() {
     ret = send(sock, message.c_str(), message.length(), 0);
     if (ret < 0) {
         printf("Failed to send file path!: %zd", ret);
-        return 1;
+        return "";
     }
     printf("Sent path!\n");
 
@@ -104,7 +108,7 @@ int sendMeta() {
         ret = read(sock, buffer, sizeof(buffer));
         if (ret < 0) {
             printf("Failed to read answer: %zd", ret);
-            return 1;
+            return "";
         } else if (ret == 0) {
             break;
         }
@@ -118,7 +122,7 @@ int sendMeta() {
 
     close(sock);
 
-    return 0;
+    return writing_id;
 }
 
 int sendData(const std::string &fileId) {

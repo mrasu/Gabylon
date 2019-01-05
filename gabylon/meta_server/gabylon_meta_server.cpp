@@ -10,8 +10,9 @@
 #include "gabylon_meta_server.h"
 #include "file_meta.h"
 #include "meta_message.h"
-#include "../exceptions/invalid_method_exception.h"
-#include "../exceptions/invalid_body_exception.h"
+#include "../server_exceptions/invalid_method_exception.h"
+#include "../server_exceptions/invalid_body_exception.h"
+#include "check_creating_message.h"
 
 #include <boost/lexical_cast.hpp>
 #include <boost/uuid/uuid_io.hpp>
@@ -64,21 +65,29 @@ int GabylonMetaServer::start() {
         int socket;
         socket = accept(listeningSocket, (struct sockaddr *) &client, &len);
 
-        std::cout << ("accepted connection") << std::endl;
+        printf("connection accepted\n");
 
         try {
             ret = handleSocketData(socket);
             if (ret != 0) {
                 printf("error happen: %d\n", ret);
             }
+        } catch (InvalidMethodException& e) {
+            error(socket, e.what());
+            printf("Error: %s\n", e.what());
+        } catch (InvalidBodyException& e) {
+            error(socket, e.what());
+            printf("Error: %s\n", e.what());
         } catch (std::exception& e) {
             printf("Error: %s\n", e.what());
         }
 
         close(socket);
+        printf("connection closed\n");
+
         count++;
 
-        if (count >= 2) break;
+        if (count >= 10) break;
     }
     close(listeningSocket);
 
@@ -110,46 +119,38 @@ int GabylonMetaServer::handleSocketData(int socket) {
             printf("*******");
             return -1;
         }
+    } else if (message->method == MetaMessageMethod::CHECK_CREATING) {
+        auto creatingMessage = CheckCreatingMessage::dumpMessage(message->body);
+        auto fileId = creatingMessage->fileId;
+
+        auto search = writingMetas.find(fileId);
+        if (search == writingMetas.end()) {
+            printf("fileId not found: %s\n", fileId.c_str());
+            auto ret = ng(socket);
+            if (ret < 0) {
+                printf("Failed to send fileId not found response");
+                return 1;
+            }
+        } else {
+            printf("fileId found: %s\n", fileId.c_str());
+            auto ret = ok(socket);
+            if (ret < 0) {
+                printf("Failed to send fileId found response");
+                return 1;
+            }
+        }
+
+        return 0;
     } else {
+        auto ret = ServerBase::error(socket, "Undefined method");
+        if (ret < 0) {
+            printf("Failed to reply failure: Undefined method");
+        }
         return 1;
     }
 }
 
 MetaMessage* GabylonMetaServer::readSocketData(int socket) {
-    char buffer[50];
-    memset(buffer, 0, sizeof(buffer));
-
-    ssize_t sret;
-
-    std::vector<char> messages;
-    bool is_previous_new_line = false;
-    bool reaches_end = false;
-    while(true) {
-        sret = read(socket, buffer, sizeof(buffer));
-
-        if (sret < 0) {
-            printf("read error!: %zd", sret);
-            return nullptr;
-        } else if (sret == 0) {
-            break;
-        }
-
-        for (int i = 0; i < sret; i++) {
-            if (buffer[i] == '\n') {
-                if (is_previous_new_line) {
-                    reaches_end = true;
-                    break;
-                }
-                is_previous_new_line = true;
-            } else if (is_previous_new_line){
-                is_previous_new_line = false;
-            }
-            messages.push_back(buffer[i]);
-        }
-        if (reaches_end) {
-            break;
-        }
-    }
-
-    return MetaMessage::dumpText(&messages[0]);
+    auto message = readSentData(socket);
+    return MetaMessage::dumpText(message);
 }

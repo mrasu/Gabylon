@@ -12,7 +12,12 @@
 #include "gabylon/content_server/gabylon_content_server.h"
 
 int main() {
-    std::cout << "Start MetaServer..." << std::endl;
-    auto *server = new GabylonMetaServer();
+    std::cout << "Start ContentServer..." << std::endl;
+
+    struct sockaddr_in metaServerAddr = {};
+    metaServerAddr.sin_family = AF_INET;
+    metaServerAddr.sin_port = htons(12345);
+    metaServerAddr.sin_addr.s_addr = inet_addr("127.0.0.1");
+    auto *server =  new GabylonContentServer("./output/", metaServerAddr);
     return server->start();
 }

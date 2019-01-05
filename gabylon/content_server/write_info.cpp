@@ -2,7 +2,7 @@
 #include <unordered_map>
 
 #include "write_info.h"
-#include "../exceptions/invalid_body_exception.h"
+#include "../server_exceptions/invalid_body_exception.h"
 
 WriteInfo *WriteInfo::dumpMessage(std::string textMessage) {
     std::unordered_map<std::string, std::string> messageMap;

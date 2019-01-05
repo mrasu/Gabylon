@@ -1,7 +1,9 @@
 #include "gabylon_content_server.h"
 #include "content_message_method.h"
 #include "write_info.h"
-#include "../exceptions/invalid_method_exception.h"
+#include "../server_exceptions/invalid_method_exception.h"
+#include "../internal_client/gabylon_meta_server_client.h"
+#include "../internal_client/client_exception.h"
 #include <boost/filesystem.hpp>
 #include <netinet/in.h>
 #include <arpa/inet.h>
@@ -62,7 +64,7 @@ int GabylonContentServer::start() {
         close(socket);
 
         count++;
-        if (count >= 2) break;
+        if (count >= 10) break;
     }
 
     close(listeningSocket);
@@ -76,24 +78,34 @@ int GabylonContentServer::handleSocketData(int socket) {
     }
 
     int ret = 0;
+    ssize_t sret;
     if (message->method == ContentMessageMethod::WRITE) {
         auto writeInfo = WriteInfo::dumpMessage(message->body);
         if (!writeInfo) {
             return 1;
         }
 
-        bool storableData = validateFileidForWriting(writeInfo);
-        if (!storableData) {
-            printf("Validation to save failed!");
-            ret = reply(socket, false, "Validation to save failed");
-            if (ret < 0) {
+        try {
+            auto isWritable = validateFileidForWriting(writeInfo);
+            if (!isWritable) {
+                printf("Validation to save failed!\n");
+                sret = error(socket, "Validation to save failed");
+                if (sret < 0) {
+                    printf("Failed to send validation failure: %d\n", ret);
+                }
+                return 1;
+            }
+        } catch (ClientException& e) {
+            printf("Failed to check FileId: %s\n", e.what());
+            sret = error(socket, "Validation to save failed");
+            if (sret < 0) {
                 printf("Failed to send validation failure: %d\n", ret);
             }
             return 1;
         }
 
-        ret = reply(socket, true, "Validation passed");
-        if (ret < 0) {
+        sret = ok(socket);
+        if (sret < 0) {
             printf("Failed to send validation success: %d\n", ret);
             return 1;
         }
@@ -104,8 +116,8 @@ int GabylonContentServer::handleSocketData(int socket) {
             return 1;
         }
 
-        ret = reply(socket, true, "File saved");
-        if (ret < 0) {
+        sret = ok(socket);
+        if (sret < 0) {
             printf("Failed to send file saved (but saved in disk): %d\n", ret);
             return 0;
         }
@@ -155,24 +167,9 @@ ContentMessage *GabylonContentServer::readSocketContentMessage(int socket) {
     return ContentMessage::dumpText(&messages[0]);
 }
 
-bool GabylonContentServer::validateFileidForWriting(WriteInfo *) {
-    // TODO
-    return true;
-}
-
-int GabylonContentServer::reply(int socket, bool succeeds, const std::string &humanMessage) {
-    std::string message;
-    if (succeeds) {
-        message = "SUCCEEDS: " + humanMessage;
-    } else {
-        message = "FAIL: " + humanMessage; 
-    }
-    auto ret = send(socket, message.c_str(), message.length(), 0);
-    if (ret < 0) {
-        return (int)ret;
-    } else {
-        return 0;
-    }
+bool GabylonContentServer::validateFileidForWriting(WriteInfo *writeInfo) {
+    auto client = GabylonMetaServerClient(metaServerAddr);
+    return client.isFileCreating(writeInfo->fileId);
 }
 
 int GabylonContentServer::saveStream(int socket, WriteInfo* info) {

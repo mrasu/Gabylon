@@ -1,7 +1,7 @@
 #include <utility>
 
 #include "content_message.h"
-#include "../exceptions/invalid_method_exception.h"
+#include "../server_exceptions/invalid_method_exception.h"
 
 ContentMessage *ContentMessage::dumpText(std::string textMessage) {
     std::string methodText;

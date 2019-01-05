@@ -1,6 +1,6 @@
 #include <cstring>
 #include "meta_message.h"
-#include "../exceptions/invalid_method_exception.h"
+#include "../server_exceptions/invalid_method_exception.h"
 
 MetaMessage* MetaMessage::dumpText(std::string textMessage) {
     std::string methodText;
@@ -24,6 +24,8 @@ MetaMessage* MetaMessage::dumpText(std::string textMessage) {
         method = CREATE;
     } else if (methodText == "SAVE") {
         method = SAVE;
+    } else if (methodText == "CHECK_CREATING") {
+        method = CHECK_CREATING;
     } else {
         std::string errorMessage = "Invalid method: ";
         throw InvalidMethodException(errorMessage.append(methodText).c_str());

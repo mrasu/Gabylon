@@ -5,7 +5,8 @@
 
 enum MetaMessageMethod {
     CREATE = 0,
-    SAVE = 1
+    SAVE = 1,
+    CHECK_CREATING = 2
 };
 
 class MetaMessage {
