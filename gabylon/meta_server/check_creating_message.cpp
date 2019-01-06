@@ -2,17 +2,13 @@
 #include "../server_exceptions/invalid_body_exception.h"
 
 CheckCreatingMessage *CheckCreatingMessage::dumpMessage(const std::string &body) {
-    auto map = parseBody(body);
+    auto map = MessageBody::parseMessage(body);
 
-    auto search = map.find("FileId");
-    if (search == map.end()) {
+    auto fileId = map->get("FileId");
+    if (fileId.empty()) {
         throw InvalidBodyException(("Invalid body (No FileId): " + body).c_str());
     }
-    auto fileId = search->second;
 
-    if (fileId.empty()) {
-        throw InvalidBodyException(("Invalid body (Empty field exists): " + body).c_str());
-    }
     return new CheckCreatingMessage(fileId);
 }
 

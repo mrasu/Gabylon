@@ -8,12 +8,13 @@
 #include <cstring>
 #include <vector>
 #include "gabylon_meta_server.h"
-#include "file_meta.h"
+#include "file_meta_message.h"
 #include "meta_message.h"
 #include "../server_exceptions/invalid_method_exception.h"
 #include "../server_exceptions/invalid_body_exception.h"
 #include "check_creating_message.h"
 #include "../lib/socket_read_writer.h"
+#include "file_meta.h"
 
 #include <boost/lexical_cast.hpp>
 #include <boost/uuid/uuid_io.hpp>
@@ -22,7 +23,18 @@
 
 GabylonMetaServer::GabylonMetaServer():
     metaMap(std::unordered_map<std::string, FileMeta*>()),
-    writingMetas(std::unordered_map<std::string, FileMeta*>()) {}
+    writingMetas(std::unordered_map<std::string, FileMeta*>()) {
+
+    ContentServerInfo *contentServers[] = {
+            new ContentServerInfo{"127.0.0.1", 12346},
+            new ContentServerInfo{"127.0.0.1", 12346}
+    };
+
+    for(auto i = 0; i < 100; i++) {
+        auto mod = i % 2;
+        contentServerAssignMap[i] = contentServers[mod];
+    }
+}
 
 void GabylonMetaServer::acceptRequest(int listeningSocket) {
     sockaddr_in client = {0};
@@ -57,16 +69,25 @@ int GabylonMetaServer::handleSocketData(int socket) {
     }
 
     if (message->method == MetaMessageMethod::CREATE) {
-        auto meta = FileMeta::dumpMessage(message->body);
+        auto metaMessage = FileMetaMessage::dumpMessage(message->body);
         auto uuid = boost::uuids::random_generator()();
         // auto uuidString = boost::lexical_cast<std::string>(fileId);
-        std::string uuidString;
         std::stringstream ss;
         ss << uuid;
-        ss >> uuidString;
+        auto uuidString = ss.str();
 
-        writingMetas[uuidString] = meta;
-        auto ret = send(socket, uuidString.c_str(), uuidString.length(), 0);
+        writingMetas[uuidString] = metaMessage->getFileMeta();
+        std::string serverMessage = "";
+
+        auto currentServerIndex = 0;
+        for (auto firstByte = 0; firstByte < metaMessage->size; firstByte += 1000) {
+            auto server = contentServerAssignMap[currentServerIndex];
+            serverMessage += "byte=" + std::to_string(firstByte) + "=" + server->str() + ";";
+
+            currentServerIndex++;
+        }
+        auto fileMessage = "FileId:" + uuidString + "\nServers:" + serverMessage + "\n\n";
+        auto ret = send(socket, fileMessage.c_str(), fileMessage.length(), 0);
 
         if (ret > 0) {
             printf("fileId sent: %s(%zd)\n", uuidString.c_str(), ret);

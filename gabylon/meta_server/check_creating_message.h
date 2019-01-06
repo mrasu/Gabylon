@@ -4,7 +4,7 @@
 
 #include "../lib/message_body.h"
 
-class CheckCreatingMessage: protected MessageBody {
+class CheckCreatingMessage {
 public:
     static CheckCreatingMessage *dumpMessage(const std::string &body);
     explicit CheckCreatingMessage(const std::string &fileId);

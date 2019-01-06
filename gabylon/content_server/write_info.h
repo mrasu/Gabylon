@@ -7,10 +7,11 @@
 class WriteInfo {
 public:
     static WriteInfo *dumpMessage(std::string);
-    WriteInfo(std::string, long, std::string);
+    WriteInfo(std::string, long, std::string, long);
     std::string fileId;
     long size;
     std::string path;
+    long from;
 };
 
 

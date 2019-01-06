@@ -3,13 +3,13 @@
 
 
 #include "file_content.h"
-#include "../meta_server/file_meta.h"
+#include "../meta_server/file_meta_message.h"
 
 class FileData {
 public:
-    FileData(FileMeta *meta, FileContent *content);
+    FileData(FileMetaMessage *meta, FileContent *content);
     FileContent *content;
-    FileMeta *meta;
+    FileMetaMessage *meta;
     int write(std::string basePath);
 };
 

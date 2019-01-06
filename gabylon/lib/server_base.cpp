@@ -7,6 +7,7 @@
 #include "server_base.h"
 
 int ServerBase::start(uint16_t port) {
+    auto handleCount = 10000;
     struct sockaddr_in addr = {0};
 
     int listeningSocket;
@@ -48,7 +49,7 @@ int ServerBase::start(uint16_t port) {
 
         count++;
 
-        if (count >= 10) break;
+        if (count >= handleCount) break;
     }
     close(listeningSocket);
 

@@ -3,66 +3,40 @@
 
 #include "write_info.h"
 #include "../server_exceptions/invalid_body_exception.h"
+#include "../lib/message_body.h"
 
-WriteInfo *WriteInfo::dumpMessage(std::string textMessage) {
-    std::unordered_map<std::string, std::string> messageMap;
+WriteInfo *WriteInfo::dumpMessage(const std::string textMessage) {
+    auto message = MessageBody::parseMessage(textMessage);
 
-    std::string key;
-    std::string value;
-    bool isKeyPart = true;
-    for (char ch: textMessage) {
-       if (ch == '\n') {
-           if (key.length() == 0 && value.length() == 0) {
-               throw InvalidBodyException(("Invalid body: " + textMessage).c_str());
-           }
-           if (messageMap.count(key) > 0) {
-               throw InvalidBodyException(("Invalid body: " + textMessage).c_str());
-           }
-
-           messageMap[key] = value;
-           key = "";
-           value = "";
-           isKeyPart = true;
-       } else if (ch == ':') {
-            isKeyPart = false;
-       } else {
-           if (isKeyPart) {
-               key += ch;
-           } else {
-               value += ch;
-           }
-       }
-    }
-
-    auto search = messageMap.find("FileId");
-    if (search == messageMap.end()) {
+    auto fileId = message->get("FileId");
+    if (fileId.empty()) {
         return nullptr;
     }
-    auto fileId = search->second;
 
-    search = messageMap.find("Size");
-    if (search == messageMap.end()) {
+    auto size = message->getLong("Size");
+    if (size == -1) {
         return nullptr;
     }
-    auto size = std::stol(search->second);
 
-    search = messageMap.find("Path");
-    if (search == messageMap.end()) {
+    auto path = message->get("Path");
+    if (path.empty()) {
         return nullptr;
     }
-    auto path = search->second;
 
-    if (!fileId.empty() && size != 0 && !path.empty()) {
-        return new WriteInfo(fileId, size, path);
-    } else {
+    auto from = message->getLong("From");
+    if (from == -1) {
         return nullptr;
     }
+
+    return new WriteInfo(fileId, size, path, from);
 }
 
-WriteInfo::WriteInfo(const std::string fileId, long size, const std::string path):
+
+WriteInfo::WriteInfo(const std::string fileId, long size, const std::string path, long from):
     fileId(fileId),
     size(size),
-    path(path) {
+    path(path),
+    from(from) {
 
 }
 

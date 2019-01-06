@@ -6,8 +6,13 @@
 #include <unordered_map>
 
 class MessageBody {
-protected:
-    static std::unordered_map<std::string, std::string> parseBody(const std::string &body);
+private:
+    std::unordered_map<std::string, std::string> map;
+    explicit MessageBody(std::unordered_map<std::string, std::string> map);
+public:
+    static MessageBody* parseMessage(std::string);
+    std::string get(std::string);
+    long getLong(std::string);
 };
 
 

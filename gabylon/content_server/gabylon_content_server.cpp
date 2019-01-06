@@ -94,7 +94,7 @@ ContentMessage *GabylonContentServer::readSocketContentMessage(int socket) {
     memset(buffer, 0, sizeof(buffer));
 
     ssize_t sret;
-    std::vector<char>messages;
+    std::string message;
     bool is_previous_new_line = false;
     bool reaches_end = false;
 
@@ -117,7 +117,7 @@ ContentMessage *GabylonContentServer::readSocketContentMessage(int socket) {
             } else if (is_previous_new_line) {
                 is_previous_new_line = false;
             }
-            messages.push_back(buffer[i]);
+            message += buffer[i];
         }
 
         if (reaches_end) {
@@ -125,7 +125,7 @@ ContentMessage *GabylonContentServer::readSocketContentMessage(int socket) {
         }
     }
 
-    return ContentMessage::dumpText(&messages[0]);
+    return ContentMessage::dumpText(message);
 }
 
 bool GabylonContentServer::validateFileidForWriting(WriteInfo *writeInfo) {
@@ -160,7 +160,8 @@ int GabylonContentServer::saveStream(int socket, WriteInfo* info) {
     }
 
     std::ofstream outputStream;
-    outputStream.open(basePath + info->path, std::ifstream::binary | std::ifstream::out);
+    std::string filePath = basePath + info->path + "=" + std::to_string(info->from);
+    outputStream.open(filePath, std::ifstream::binary | std::ifstream::out);
     outputStream.write(&file_content[0], file_content.size());
     outputStream.close();
 

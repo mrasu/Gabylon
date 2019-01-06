@@ -1,15 +1,13 @@
-#ifndef CLIENT_FILE_METADATA_H
-#define CLIENT_FILE_METADATA_H
+#ifndef CLIENT_FILE_META_H
+#define CLIENT_FILE_META_H
 
 
 #include <string>
 
-class FileMeta {
-public:
-    static FileMeta* dumpMessage(std::string messageBody);
-    explicit FileMeta(std::string path);
+struct FileMeta {
     std::string path;
+    long size;
 };
 
 
-#endif //CLIENT_FILE_METADATA_H
+#endif //CLIENT_FILE_META_H
